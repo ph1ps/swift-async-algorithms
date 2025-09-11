@@ -12,16 +12,16 @@ public func retry<Result, ErrorType, ClockType>(
   clock: ClockType,
   isolation: isolated (any Actor)? = #isolation,
   operation: () async throws(ErrorType) -> sending Result,
-  strategy: (_ attempt: Int, ErrorType) -> RetryStrategy<ClockType.Instant.Duration> = { _, _ in .backoff(.zero) }
+  strategy: (ErrorType) -> RetryStrategy<ClockType.Instant.Duration> = { _, _ in .backoff(.zero) }
 ) async throws -> Result where ClockType: Clock, ErrorType: Error {
   precondition(maxAttempts > 0, "Must have at least one attempt")
-  for attempt in 0..<maxAttempts - 1 {
+  for _ in 0..<maxAttempts - 1 {
     do {
       return try await operation()
     } catch where Task.isCancelled {
       throw error
     } catch {
-      switch strategy(attempt, error) {
+      switch strategy(error) {
       case .backoff(let duration):
         try await Task.sleep(for: duration, tolerance: tolerance, clock: clock)
       case .stop:
@@ -39,7 +39,7 @@ public func retry<Result, ErrorType>(
   tolerance: ContinuousClock.Instant.Duration? = nil,
   isolation: isolated (any Actor)? = #isolation,
   operation: () async throws(ErrorType) -> sending Result,
-  strategy: (_ attempt: Int, ErrorType) -> RetryStrategy<ContinuousClock.Instant.Duration> = { _, _ in .backoff(.zero) }
+  strategy: (ErrorType) -> RetryStrategy<ContinuousClock.Instant.Duration> = { _, _ in .backoff(.zero) }
 ) async throws -> Result where ErrorType: Error {
   return try await retry(
     maxAttempts: maxAttempts,
