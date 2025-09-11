@@ -116,22 +116,22 @@ struct EqualJitterBackoffStrategy<Base: BackoffStrategy, RNG: RandomNumberGenera
 
 @available(iOS 18.0, macCatalyst 18.0, macOS 15.0, tvOS 18.0, visionOS 2.0, watchOS 11.0, *)
 @usableFromInline
-struct DecorrelatedJitterBackoffStrategy<Base: BackoffStrategy>: BackoffStrategy where Base.Duration == Swift.Duration {
+struct DecorrelatedJitterBackoffStrategy<Base: BackoffStrategy, RNG: RandomNumberGenerator>: BackoffStrategy where Base.Duration == Swift.Duration {
   @usableFromInline var base: Base
   @usableFromInline var generator: RNG
-  @usableFromInline init(base: Base, generator: RNG) {
+  @usableFromInline var current: Duration?
+  @usableFromInline let factor: Int
+  @usableFromInline init(base: Base, generator: RNG, factor: Int) {
     self.base = base
     self.generator = generator
+    self.factor = factor
   }
   @inlinable mutating func nextDuration() -> Base.Duration {
-    let halfBase = (base.nextDuration() / 2).attoseconds
-    return .init(attoseconds: halfBase + Int128.random(in: 0...halfBase, using: &generator))
-  }
-  @inlinable mutating func duration(_ attempt: Int, using generator: inout some RandomNumberGenerator) -> Base.Duration {
-    let base = base.duration(attempt, using: &generator)
-    let previousDuration = previousDuration ?? base
-    self.previousDuration = previousDuration
-    return .init(attoseconds: Int128.random(in: base.attoseconds...previousDuration.attoseconds / divisor, using: &generator))
+    let base = base.nextDuration()
+    let current = current ?? base
+    let next = Duration(attoseconds: Int128.random(in: base.attoseconds...(current * factor).attoseconds, using: &generator))
+    self.current = next
+    return next
   }
 }
 
@@ -175,7 +175,7 @@ extension BackoffStrategy where Duration == Swift.Duration {
   @inlinable public func equalJitter<RNG: RandomNumberGenerator>(using generator: RNG = SystemRandomNumberGenerator()) -> some BackoffStrategy<Duration> {
     return EqualJitterBackoffStrategy(base: self, generator: generator)
   }
-  /*@inlinable public func decorrelatedJitter(divisor: Int = 3) -> some BackoffStrategy<Duration> {
-    return DecorrelatedJitterBackoffStrategy(base: self, divisor: Int128(divisor))
-  }*/
+  @inlinable public func decorrelatedJitter<RNG: RandomNumberGenerator>(factor: Int, using generator: RNG = SystemRandomNumberGenerator()) -> some BackoffStrategy<Duration> {
+    return DecorrelatedJitterBackoffStrategy(base: self, generator: generator, factor: factor)
+  }
 }
