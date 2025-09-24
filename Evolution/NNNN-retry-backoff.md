@@ -22,6 +22,7 @@ Providing a standard `retry` function and reusable backoff strategies in Swift A
 This proposal introduces a retry function that executes an asynchronous operation up to a specified number of attempts, with customizable delays and error-based retry decisions between attempts.
 
 ```swift
+@available(iOS 16.0, macCatalyst 16.0, macOS 13.0, tvOS 16.0, visionOS 1.0, watchOS 9.0, *)
 public func retry<Result, ErrorType, ClockType>(
   maxAttempts: Int,
   tolerance: ClockType.Instant.Duration? = nil,
@@ -33,6 +34,7 @@ public func retry<Result, ErrorType, ClockType>(
 ```
 
 ```swift
+@available(iOS 16.0, macCatalyst 16.0, macOS 13.0, tvOS 16.0, visionOS 1.0, watchOS 9.0, *)
 public enum RetryAction<Duration: DurationProtocol> {
   case backoff(Duration)
   case stop
@@ -42,6 +44,7 @@ public enum RetryAction<Duration: DurationProtocol> {
 Additionally, this proposal includes a suite of backoff strategies that can be used to generate delays between retry attempts. The core strategies provide different patterns for calculating delays: constant intervals, linear growth, exponential growth, and decorrelated jitter.
 
 ```swift
+@available(iOS 16.0, macCatalyst 16.0, macOS 13.0, tvOS 16.0, visionOS 1.0, watchOS 9.0, *)
 public enum Backoff {
   public static func constant<Duration: DurationProtocol>(_ constant: Duration) -> some BackoffStrategy<Duration>
   public static func constant(_ constant: Duration) -> some BackoffStrategy<Duration>
@@ -49,6 +52,8 @@ public enum Backoff {
   public static func linear(increment: Duration, initial: Duration) -> some BackoffStrategy<Duration>
   public static func exponential<Duration: DurationProtocol>(factor: Int, initial: Duration) -> some BackoffStrategy<Duration>
   public static func exponential(factor: Int, initial: Duration) -> some BackoffStrategy<Duration>
+}
+extension Backoff {
   public static func decorrelatedJitter<RNG: RandomNumberGenerator>(factor: Int, base: Duration, using generator: RNG = SystemRandomNumberGenerator()) -> some BackoffStrategy<Duration>
 }
 ```
@@ -56,9 +61,12 @@ public enum Backoff {
 These strategies can be modified to enforce minimum or maximum delays, or to add jitter for preventing the thundering herd problem.
 
 ```swift
+@available(iOS 16.0, macCatalyst 16.0, macOS 13.0, tvOS 16.0, visionOS 1.0, watchOS 9.0, *)
 extension BackoffStrategy {
   public func minimum(_ minimum: Duration) -> some BackoffStrategy<Duration>
   public func maximum(_ maximum: Duration) -> some BackoffStrategy<Duration>
+}
+extension BackoffStrategy {
   public func fullJitter<RNG: RandomNumberGenerator>(using generator: RNG = SystemRandomNumberGenerator()) -> some BackoffStrategy<Duration>
   public func equalJitter<RNG: RandomNumberGenerator>(using generator: RNG = SystemRandomNumberGenerator()) -> some BackoffStrategy<Duration>
 }
@@ -66,11 +74,12 @@ extension BackoffStrategy {
 
 Constant, linear, and exponential backoff provide overloads for both `Duration` and `DurationProtocol`. This matches the `retry` overloads where the default clock is `ContinuousClock` whose duration type is `Duration`.
 
-Jitter variants currently require `Duration` rather than a generic `DurationProtocol`, because only `Duration` exposes a numeric representation suitable for randomization (see [SE-0457](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0457-duration-attosecond-represenation.md).
+Jitter variants currently require `Duration` rather than a generic `DurationProtocol`, because only `Duration` exposes a numeric representation suitable for randomization (see [SE-0457](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0457-duration-attosecond-represenation.md)).
 
 Each of those strategies conforms to the `BackoffStrategy` protocol:
 
 ```swift
+@available(iOS 16.0, macCatalyst 16.0, macOS 13.0, tvOS 16.0, visionOS 1.0, watchOS 9.0, *)
 public protocol BackoffStrategy<Duration> {
   associatedtype Duration: DurationProtocol
   mutating func nextDuration() -> Duration
