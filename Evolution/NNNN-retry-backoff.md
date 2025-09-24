@@ -73,6 +73,9 @@ public protocol BackoffStrategy<Duration> {
 }
 ```
 
+Jitter variants are not able to utilize the generic form of `Duration`, `DurationProtocol` due to the lack of randomizing capabilities. 
+`Duration` recently gained this capability by exposing its underlying numerical representation via [SE-0457](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0457-duration-attosecond-represenation.md)
+
 ## Detailed design
 
 ### Retry
@@ -96,6 +99,7 @@ Given this sequence, there is a total of four termination conditions (when retry
 #### Cancellation
 
 `retry` itself does not introduce any specific cancellation handling. If asynchronous code opts into cooperative cancellation by throwing an error, it has to make sure it handles this case in the retry strategy, by returning `.stop`, as this is a non-retryable error, usually. 
+
 If you forget to do this, retrying will not be stopped, unless the given clock does cancel cooperatively by throwing (which at the time of writing both `ContinuousClock` and `SuspendingClock` do).
 
 ### Backoff
@@ -111,6 +115,7 @@ var backoff = Backoff
 #### Custom backoff
 
 Adopters may choose to create own strategies. There is no requirement to conform to `BackoffStrategy` since retry and backoff are loosely coupled. However if they want to allow for "backoff modifiers" like `minimum`, `maximum` and jitter variants, they are required to do so.
+
 Each call to `nextDuration()` returns the delay for the next retry attempt. Strategies are naturally stateful, they may track eg. the number of invocations or the previously returned duration to calculate the next delay.
 
 #### Standard backoff
