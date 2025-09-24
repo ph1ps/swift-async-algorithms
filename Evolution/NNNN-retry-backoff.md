@@ -19,7 +19,7 @@ Providing a standard `retry` function and reusable backoff strategies in Swift A
 
 ## Proposed solution
 
-This proposal introduces a retry function that executes an async operation up to a specified number of attempts, with customizable delays and error-based retry decisions between attempts.
+This proposal introduces a retry function that executes an asynchronous operation up to a specified number of attempts, with customizable delays and error-based retry decisions between attempts.
 
 ```swift
 public func retry<Result, ErrorType, ClockType>(
@@ -64,6 +64,15 @@ extension BackoffStrategy {
 }
 ```
 
+Each of those strategies conforms to the `BackoffStrategy` protocol:
+
+```swift
+public protocol BackoffStrategy<Duration> {
+  associatedtype Duration: DurationProtocol
+  mutating func nextDuration() -> Duration
+}
+```
+
 ## Detailed design
 
 ### Retry
@@ -78,11 +87,11 @@ The retry algorithm follows this sequence:
     - Return to step 1
 4. If failed on the final attempt, rethrow the error without consulting the strategy
 
-Given this sequence, there is a total of four termination conditions:
-1. **Success**: The operation completes without throwing an error
-2. **Maximum attempts exhausted**: The operation has been attempted `maxAttempts` times
-3. **Strategy decision to stop**: The strategy closure returns `.stop`
-3. **Clock throws**: The given clock throws, which will be rethrown
+Given this sequence, there is a total of four termination conditions (when retrying will be stopped):
+- The operation completes without throwing an error
+- The operation has been attempted `maxAttempts` times
+- The strategy closure returns `.stop`
+- The given clock throws
 
 #### Cancellation
 
@@ -91,31 +100,31 @@ If you forget to do this, retrying will not be stopped, unless the given clock d
 
 ### Backoff
 
-All strategies conform to:
+All proposed strategies conform to `BackoffStrategy` which allows for builder-like patterns like these:
 ```swift
-public protocol BackoffStrategy<Duration> {
-  associatedtype Duration: DurationProtocol
-  mutating func nextDuration() -> Duration
-}
+var backoff = Backoff
+  .exponential(factor: 2, initial: .milliseconds(100))
+  .maximum(.seconds(5))
+  .fullJitter()
 ```
-Each call to nextDuration() returns the delay for the next retry attempt. Strategies are stateful - they may track the number of invocations or the previously returned duration to calculate the next delay.
 
-#### Constant
-Formula: $`f(n) = constant`$
-#### Linear
-Formula: $`f(n) = initial + increment * n`$
-#### Exponential
-Formula: $`f(n) = initial * factor ^ n`$
-#### Decorrelated Jitter
-Formula: $`f(n) = random(base, f(n - 1) * factor)`$, $`f(0) = base`$
-#### Minimum
-Formula: $`f(n) = max(minimum, g(n))`$, `g(n)` is the base strategy.
-#### Maximum
-Formula: $`f(n) = min(maximum, g(n))`$, `g(n)` is the base strategy.
-#### Full Jitter
-Formula: $`f(n) = random(0, g(n))`$, `g(n)` is the base strategy.
-#### Equal Jitter
-Formula: $`f(n) = random(g(n) / 2, g(n))`$, `g(n)` is the base strategy.
+#### Custom backoff
+
+You can create custom strategies that conform to `BackoffStrategy` if you want to opt into the "backoff modifiers" like `minimum`, `maximum` and jitter variants.
+Each call to `nextDuration()` returns the delay for the next retry attempt. Strategies are stateful, they may track eg. the number of invocations or the previously returned duration to calculate the next delay.
+
+#### Standard backoff
+
+As previously mentioned this proposal introduces several common backoff strategies which include: 
+
+**Constant**: $`f(n) = constant`$
+**Linear**: $`f(n) = initial + increment * n`$
+**Exponential**: $`f(n) = initial * factor ^ n`$
+**Decorrelated Jitter**: $`f(n) = random(base, f(n - 1) * factor)`$ where $`f(0) = base`$
+**Minimum**: $`f(n) = max(minimum, g(n))`$ where `g(n)` is the base strategy
+**Maximum**: $`f(n) = min(maximum, g(n))`$ where `g(n)` is the base strategy
+**Full Jitter**: $`f(n) = random(0, g(n))`$ where `g(n)` is the base strategy
+**Equal Jitter**: $`f(n) = random(g(n) / 2, g(n))`$ where `g(n)` is the base strategy
 
 ## Effect on API resilience
 
