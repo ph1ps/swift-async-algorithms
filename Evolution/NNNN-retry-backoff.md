@@ -110,21 +110,21 @@ var backoff = Backoff
 
 #### Custom backoff
 
-You can create custom strategies that conform to `BackoffStrategy` if you want to opt into the "backoff modifiers" like `minimum`, `maximum` and jitter variants.
-Each call to `nextDuration()` returns the delay for the next retry attempt. Strategies are stateful, they may track eg. the number of invocations or the previously returned duration to calculate the next delay.
+Adopters may choose to create own strategies. There is no requirement to conform to `BackoffStrategy` since retry and backoff are loosely coupled. However if they want to allow for "backoff modifiers" like `minimum`, `maximum` and jitter variants, they are required to do so.
+Each call to `nextDuration()` returns the delay for the next retry attempt. Strategies are naturally stateful, they may track eg. the number of invocations or the previously returned duration to calculate the next delay.
 
 #### Standard backoff
 
 As previously mentioned this proposal introduces several common backoff strategies which include: 
 
-**Constant**: $`f(n) = constant`$
-**Linear**: $`f(n) = initial + increment * n`$
-**Exponential**: $`f(n) = initial * factor ^ n`$
-**Decorrelated Jitter**: $`f(n) = random(base, f(n - 1) * factor)`$ where $`f(0) = base`$
-**Minimum**: $`f(n) = max(minimum, g(n))`$ where `g(n)` is the base strategy
-**Maximum**: $`f(n) = min(maximum, g(n))`$ where `g(n)` is the base strategy
-**Full Jitter**: $`f(n) = random(0, g(n))`$ where `g(n)` is the base strategy
-**Equal Jitter**: $`f(n) = random(g(n) / 2, g(n))`$ where `g(n)` is the base strategy
+- **Constant**: $`f(n) = constant`$
+- **Linear**: $`f(n) = initial + increment * n`$
+- **Exponential**: $`f(n) = initial * factor ^ n`$
+- **Decorrelated Jitter**: $`f(n) = random(base, f(n - 1) * factor)`$ where $`f(0) = base`$
+- **Minimum**: $`f(n) = max(minimum, g(n))`$ where `g(n)` is the base strategy
+- **Maximum**: $`f(n) = min(maximum, g(n))`$ where `g(n)` is the base strategy
+- **Full Jitter**: $`f(n) = random(0, g(n))`$ where `g(n)` is the base strategy
+- **Equal Jitter**: $`f(n) = random(g(n) / 2, g(n))`$ where `g(n)` is the base strategy
 
 ## Effect on API resilience
 
