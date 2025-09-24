@@ -64,6 +64,11 @@ extension BackoffStrategy {
 }
 ```
 
+Constant, linear and exponential backoff provide an overload for `Duration` **and** `DurationProtocol`. 
+This is convenient and matches the overloads of `retry`'s where the default clock is `ContinuousClock` which `DurationProtocol` is `Duration`.
+Jitter variants are not able to utilize `DurationProtocol` due to the lack of randomizing capabilities. 
+`Duration` recently gained this capability by exposing its underlying numerical representation via [SE-0457](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0457-duration-attosecond-represenation.md).
+
 Each of those strategies conforms to the `BackoffStrategy` protocol:
 
 ```swift
@@ -72,9 +77,6 @@ public protocol BackoffStrategy<Duration> {
   mutating func nextDuration() -> Duration
 }
 ```
-
-Jitter variants are not able to utilize the generic form of `Duration`, `DurationProtocol` due to the lack of randomizing capabilities. 
-`Duration` recently gained this capability by exposing its underlying numerical representation via [SE-0457](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0457-duration-attosecond-represenation.md)
 
 ## Detailed design
 
@@ -130,6 +132,15 @@ As previously mentioned this proposal introduces several common backoff strategi
 - **Maximum**: $`f(n) = min(maximum, g(n))`$ where `g(n)` is the base strategy
 - **Full Jitter**: $`f(n) = random(0, g(n))`$ where `g(n)` is the base strategy
 - **Equal Jitter**: $`f(n) = random(g(n) / 2, g(n))`$ where `g(n)` is the base strategy
+
+### Case studies
+
+The most common use cases encountered for recovering from transient failures are either:
+- a system requiring its user to come up with a reasonable duration to let the system cool off
+- a system providing its own duration which the user is supposed to honor to let the system cool off
+
+Both of these use cases can be implemented using the proposed algorithm, respectively:
+
 
 ## Effect on API resilience
 
