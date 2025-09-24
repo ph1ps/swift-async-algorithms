@@ -100,7 +100,7 @@ If you forget to do this, retrying will not be stopped, unless the given clock d
 
 ### Backoff
 
-All proposed strategies conform to `BackoffStrategy` which allows for builder-like patterns like these:
+All proposed strategies conform to `BackoffStrategy` which allows for builder-like syntax like this:
 ```swift
 var backoff = Backoff
   .exponential(factor: 2, initial: .milliseconds(100))
