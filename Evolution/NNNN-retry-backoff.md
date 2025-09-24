@@ -30,7 +30,9 @@ public func retry<Result, ErrorType, ClockType>(
   operation: () async throws(ErrorType) -> Result,
   strategy: (ErrorType) -> RetryAction<ClockType.Instant.Duration> = { _ in .backoff(.zero) }
 ) async throws -> Result where ClockType: Clock, ErrorType: Error
+```
 
+```swift
 public enum RetryAction<Duration: DurationProtocol> {
   case backoff(Duration)
   case stop
