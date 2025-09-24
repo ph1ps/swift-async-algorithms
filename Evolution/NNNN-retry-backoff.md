@@ -7,7 +7,7 @@
 
 ## Introduction
 
-This proposal introduces a `retry` function and a suite of backoff strategies to Swift Async Algorithms, enabling robust retry of failed asynchronous operations with customizable delays and error-driven retry decisions.
+This proposal introduces a `retry` function and a suite of backoff strategies for Swift Async Algorithms, enabling robust retries of failed asynchronous operations with customizable delays and error-driven decisions.
 
 Swift forums thread: [Discussion thread topic for that proposal](https://forums.swift.org/)
 
@@ -15,7 +15,7 @@ Swift forums thread: [Discussion thread topic for that proposal](https://forums.
 
 Retry logic with backoff is a common requirement in asynchronous programming, especially for operations subject to transient failures such as network requests. Today, developers must reimplement retry loops manually, leading to fragmented and error-prone solutions across the ecosystem.  
 
-Providing a standard `retry` function and reusable backoff strategies in Swift Async Algorithms ensures consistent, safe, and well-tested patterns for handling transient failures.
+Providing a standard `retry` function and reusable backoff strategies in Swift Async Algorithms ensures consistent, safe and well-tested patterns for handling transient failures.
 
 ## Proposed solution
 
@@ -64,11 +64,9 @@ extension BackoffStrategy {
 }
 ```
 
-Constant, linear and exponential backoff provide an overload for `Duration` **and** `DurationProtocol`. 
-This is convenient and matches the overloads of `retry`'s where the default clock is `ContinuousClock` which `DurationProtocol` is `Duration`.
+Constant, linear, and exponential backoff provide overloads for both `Duration` and `DurationProtocol`. This matches the `retry` overloads where the default clock is `ContinuousClock` whose duration type is `Duration`.
 
-Jitter variants are not able to utilize `DurationProtocol` due to the lack of randomizing capabilities. 
-`Duration` recently gained this capability by exposing its underlying numerical representation via [SE-0457](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0457-duration-attosecond-represenation.md).
+Jitter variants currently require `Duration` rather than a generic `DurationProtocol`, because only `Duration` exposes a numeric representation suitable for randomization (see [SE-0457])(https://github.com/swiftlang/swift-evolution/blob/main/proposals/0457-duration-attosecond-represenation.md).
 
 Each of those strategies conforms to the `BackoffStrategy` protocol:
 
@@ -101,9 +99,7 @@ Given this sequence, there is a total of four termination conditions (when retry
 
 #### Cancellation
 
-`retry` itself does not introduce any specific cancellation handling. If asynchronous code opts into cooperative cancellation by throwing an error, it has to make sure it handles this case in the retry strategy, by returning `.stop`, as this is a non-retryable error, usually. 
-
-If you forget to do this, retrying will not be stopped, unless the given clock does cancel cooperatively by throwing (which at the time of writing both `ContinuousClock` and `SuspendingClock` do).
+`retry` does not introduce special cancellation handling. If your code cooperatively cancels by throwing, ensure your strategy returns `.stop` for that error. Otherwise, retries will continue unless the given clock throws on cancellation (which, at the time of writing, both `ContinuousClock` and `SuspendingClock` do).
 
 ### Backoff
 
@@ -117,7 +113,7 @@ var backoff = Backoff
 
 #### Custom backoff
 
-Adopters may choose to create own strategies. There is no requirement to conform to `BackoffStrategy` since retry and backoff are not coupled. However if they want to allow for "backoff modifiers" like `minimum`, `maximum` and jitter variants, they are required to do so.
+Adopters may choose to create their own strategies. There is no requirement to conform to `BackoffStrategy`, since retry and backoff are decoupled; however, to use the provided modifiers (`minimum`, `maximum`, `jitter`), a strategy must conform.
 
 Each call to `nextDuration()` returns the delay for the next retry attempt. Strategies are naturally stateful. For instance they may track the number of invocations or the previously returned duration to calculate the next delay.
 
@@ -175,7 +171,7 @@ let response = try await retry(maxAttempts: 5) {
   }
 }
 ```
-(For demonstration purposes only, a network server was chosen as remote system)
+(For demonstration purposes only, a network server is used as remote system)
 
 ## Effect on API resilience
 
@@ -184,7 +180,7 @@ This proposal introduces purely additive API with no impact on existing function
 ## Future directions
 
 The jitter variants introduced by this proposal support custom `RandomNumberGenerator` by **copying** it in order to perform the necessary mutations. 
-This is not optimal and does not match the standard libraries signatures of eg. `shuffle()` or `randomElement()` which take an **`inout`** random number generator.
+This is not optimal and does not match the standard libraries signatures of e.g. `shuffle()` or `randomElement()` which take an **`inout`** random number generator.
 Due to the composability of backoff algorithms proposed, this is not possible to adopt in current Swift.
 If Swift at one point gains the capability to "store" `inout` variables the jitter variants should try to adopt this by introducing new `inout` overloads and deprecating the copying overloads.
 
