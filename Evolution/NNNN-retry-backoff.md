@@ -141,6 +141,40 @@ The most common use cases encountered for recovering from transient failures are
 
 Both of these use cases can be implemented using the proposed algorithm, respectively:
 
+```swift
+let rng = SystemRandomNumberGenerator() // or a seeded rng for unit tests
+var backoff = Backoff
+  .exponential(factor: 2, initial: .milliseconds(100))
+  .maximum(.seconds(10))
+  .fullJitter(using: rng)
+
+let response = try await retry(maxAttempts: 5) {
+  try await URLSession.shared.data(from: url)
+} strategy: { error in
+  return .backoff(backoff.nextDuration())
+}
+```
+
+```swift
+let response = try await retry(maxAttempts: 5) {
+  let (data, response) = try await URLSession.shared.data(from: url)
+  if
+    let response = response as? HTTPURLResponse,
+    response.statusCode == 429,
+    let retryAfter = response.value(forHTTPHeaderField: "Retry-After")
+  {
+   throw TooManyRequestsError(retryAfter: Double(retryAfter)!)
+  }
+  return (data, response)
+} strategy: { error in
+  if let error = error as? TooManyRequestsError {
+    return .backoff(.seconds(error.retryAfter))
+  } else {
+    return .stop
+  }
+}
+```
+(For demonstration purposes only, a network server was chosen as remote system)
 
 ## Effect on API resilience
 
