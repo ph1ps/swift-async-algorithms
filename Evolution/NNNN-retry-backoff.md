@@ -117,7 +117,7 @@ var backoff = Backoff
 
 #### Custom backoff
 
-Adopters may choose to create own strategies. There is no requirement to conform to `BackoffStrategy` since retry and backoff are loosely coupled. However if they want to allow for "backoff modifiers" like `minimum`, `maximum` and jitter variants, they are required to do so.
+Adopters may choose to create own strategies. There is no requirement to conform to `BackoffStrategy` since retry and backoff are not coupled. However if they want to allow for "backoff modifiers" like `minimum`, `maximum` and jitter variants, they are required to do so.
 
 Each call to `nextDuration()` returns the delay for the next retry attempt. Strategies are naturally stateful, they may track eg. the number of invocations or the previously returned duration to calculate the next delay.
 
