@@ -53,6 +53,7 @@ public enum Backoff {
   public static func exponential<Duration: DurationProtocol>(factor: Int, initial: Duration) -> some BackoffStrategy<Duration>
   public static func exponential(factor: Int, initial: Duration) -> some BackoffStrategy<Duration>
 }
+@available(iOS 18.0, macCatalyst 18.0, macOS 15.0, tvOS 18.0, visionOS 2.0, watchOS 11.0, *)
 extension Backoff {
   public static func decorrelatedJitter<RNG: RandomNumberGenerator>(factor: Int, base: Duration, using generator: RNG = SystemRandomNumberGenerator()) -> some BackoffStrategy<Duration>
 }
@@ -66,6 +67,7 @@ extension BackoffStrategy {
   public func minimum(_ minimum: Duration) -> some BackoffStrategy<Duration>
   public func maximum(_ maximum: Duration) -> some BackoffStrategy<Duration>
 }
+@available(iOS 18.0, macCatalyst 18.0, macOS 15.0, tvOS 18.0, visionOS 2.0, watchOS 11.0, *)
 extension BackoffStrategy {
   public func fullJitter<RNG: RandomNumberGenerator>(using generator: RNG = SystemRandomNumberGenerator()) -> some BackoffStrategy<Duration>
   public func equalJitter<RNG: RandomNumberGenerator>(using generator: RNG = SystemRandomNumberGenerator()) -> some BackoffStrategy<Duration>
