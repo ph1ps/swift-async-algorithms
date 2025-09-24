@@ -39,7 +39,7 @@ public enum RetryAction<Duration: DurationProtocol> {
 }
 ```
 
-Additionally, this proposal includes a family of backoff strategies that can be used to generate delays between retry attempts. The core strategies provide different patterns for calculating delays: constant intervals, linear growth, exponential growth, and decorrelated jitter.
+Additionally, this proposal includes a suite of backoff strategies that can be used to generate delays between retry attempts. The core strategies provide different patterns for calculating delays: constant intervals, linear growth, exponential growth, and decorrelated jitter.
 
 ```swift
 public enum Backoff {
