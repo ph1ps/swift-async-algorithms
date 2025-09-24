@@ -66,7 +66,7 @@ extension BackoffStrategy {
 
 Constant, linear, and exponential backoff provide overloads for both `Duration` and `DurationProtocol`. This matches the `retry` overloads where the default clock is `ContinuousClock` whose duration type is `Duration`.
 
-Jitter variants currently require `Duration` rather than a generic `DurationProtocol`, because only `Duration` exposes a numeric representation suitable for randomization (see [SE-0457])(https://github.com/swiftlang/swift-evolution/blob/main/proposals/0457-duration-attosecond-represenation.md).
+Jitter variants currently require `Duration` rather than a generic `DurationProtocol`, because only `Duration` exposes a numeric representation suitable for randomization (see [SE-0457](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0457-duration-attosecond-represenation.md).
 
 Each of those strategies conforms to the `BackoffStrategy` protocol:
 
