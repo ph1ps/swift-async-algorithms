@@ -87,7 +87,7 @@ Given this sequence, there is a total of four termination conditions:
 #### Cancellation
 
 `retry` itself does not introduce any specific cancellation handling. If asynchronous code opts into cooperative cancellation by throwing an error, it has to make sure it handles this case in the retry strategy, by returning `.stop`, as this is a non-retryable error, usually. 
-If you forget to do this, retrying will not be stopped, except when the given clock does cancel cooperatively by throwing (which at the time of writing both `ContinuousClock` and `SuspendingClock` do).
+If you forget to do this, retrying will not be stopped, unless the given clock does cancel cooperatively by throwing (which at the time of writing both `ContinuousClock` and `SuspendingClock` do).
 
 ### Backoff
 
