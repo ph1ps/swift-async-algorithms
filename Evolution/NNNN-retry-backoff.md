@@ -68,7 +68,7 @@ extension BackoffStrategy {
   public func maximum(_ maximum: Duration) -> some BackoffStrategy<Duration>
 }
 @available(iOS 18.0, macCatalyst 18.0, macOS 15.0, tvOS 18.0, visionOS 2.0, watchOS 11.0, *)
-extension BackoffStrategy {
+extension BackoffStrategy where Duration == Swift.Duration {
   public func fullJitter<RNG: RandomNumberGenerator>(using generator: RNG = SystemRandomNumberGenerator()) -> some BackoffStrategy<Duration>
   public func equalJitter<RNG: RandomNumberGenerator>(using generator: RNG = SystemRandomNumberGenerator()) -> some BackoffStrategy<Duration>
 }
@@ -96,21 +96,21 @@ The retry algorithm follows this sequence:
 1. Execute the operation
 2. If successful, return the result
 3. If failed and this was not the final attempt:
-- Call the `strategy` closure with the error
-  - If strategy returns `.stop`, rethrow the error immediately
-  - If strategy returns `.backoff`, suspend for the given duration
-    - Return to step 1
+   - Call the `strategy` closure with the error
+     - If the strategy returns `.stop`, rethrow the error immediately
+     - If the strategy returns `.backoff`, suspend for the given duration
+       - Return to step 1
 4. If failed on the final attempt, rethrow the error without consulting the strategy
 
-Given this sequence, there is a total of four termination conditions (when retrying will be stopped):
+Given this sequence, there are four termination conditions (when retrying will be stopped):
 - The operation completes without throwing an error
 - The operation has been attempted `maxAttempts` times
 - The strategy closure returns `.stop`
-- The given clock throws
+- The clock throws
 
 #### Cancellation
 
-`retry` does not introduce special cancellation handling. If your code cooperatively cancels by throwing, ensure your strategy returns `.stop` for that error. Otherwise, retries will continue unless the given clock throws on cancellation (which, at the time of writing, both `ContinuousClock` and `SuspendingClock` do).
+`retry` does not introduce special cancellation handling. If your code cooperatively cancels by throwing, ensure your strategy returns `.stop` for that error. Otherwise, retries continue unless the clock throws on cancellation (which, at the time of writing, both `ContinuousClock` and `SuspendingClock` do).
 
 ### Backoff
 
@@ -126,20 +126,20 @@ var backoff = Backoff
 
 Adopters may choose to create their own strategies. There is no requirement to conform to `BackoffStrategy`, since retry and backoff are decoupled; however, to use the provided modifiers (`minimum`, `maximum`, `jitter`), a strategy must conform.
 
-Each call to `nextDuration()` returns the delay for the next retry attempt. Strategies are naturally stateful. For instance they may track the number of invocations or the previously returned duration to calculate the next delay.
+Each call to `nextDuration()` returns the delay for the next retry attempt. Strategies are naturally stateful. For instance, they may track the number of invocations or the previously returned duration to calculate the next delay.
 
 #### Standard backoff
 
 As previously mentioned this proposal introduces several common backoff strategies which include: 
 
-- **Constant**: $`f(n) = constant`$
-- **Linear**: $`f(n) = initial + increment * n`$
-- **Exponential**: $`f(n) = initial * factor ^ n`$
-- **Decorrelated Jitter**: $`f(n) = random(base, f(n - 1) * factor)`$ where $`f(0) = base`$
-- **Minimum**: $`f(n) = max(minimum, g(n))`$ where `g(n)` is the base strategy
-- **Maximum**: $`f(n) = min(maximum, g(n))`$ where `g(n)` is the base strategy
-- **Full Jitter**: $`f(n) = random(0, g(n))`$ where `g(n)` is the base strategy
-- **Equal Jitter**: $`f(n) = random(g(n) / 2, g(n))`$ where `g(n)` is the base strategy
+- **Constant**: $f(n) = constant$
+- **Linear**: $f(n) = initial + increment * n$
+- **Exponential**: $f(n) = initial * factor ^ n$
+- **Decorrelated Jitter**: $f(n) = random(base, f(n - 1) * factor)$ where $f(0) = base$
+- **Minimum**: $f(n) = max(minimum, g(n))$ where $g(n)$ is the base strategy
+- **Maximum**: $f(n) = min(maximum, g(n))$ where $g(n)$ is the base strategy
+- **Full Jitter**: $f(n) = random(0, g(n))$ where $g(n)$ is the base strategy
+- **Equal Jitter**: $f(n) = random(g(n) / 2, g(n))$ where $g(n)$ is the base strategy
 
 ### Case studies
 
@@ -150,7 +150,7 @@ The most common use cases encountered for recovering from transient failures are
 Both of these use cases can be implemented using the proposed algorithm, respectively:
 
 ```swift
-let rng = SystemRandomNumberGenerator() // or a seeded rng for unit tests
+let rng = SystemRandomNumberGenerator() // or a seeded RNG for unit tests
 var backoff = Backoff
   .exponential(factor: 2, initial: .milliseconds(100))
   .maximum(.seconds(10))
@@ -169,9 +169,10 @@ let response = try await retry(maxAttempts: 5) {
   if
     let response = response as? HTTPURLResponse,
     response.statusCode == 429,
-    let retryAfter = response.value(forHTTPHeaderField: "Retry-After")
+    let retryAfter = response.value(forHTTPHeaderField: "Retry-After"),
+    let seconds = Double(retryAfter)
   {
-   throw TooManyRequestsError(retryAfter: Double(retryAfter)!)
+    throw TooManyRequestsError(retryAfter: seconds)
   }
   return (data, response)
 } strategy: { error in
@@ -182,18 +183,18 @@ let response = try await retry(maxAttempts: 5) {
   }
 }
 ```
-(For demonstration purposes only, a network server is used as remote system)
+(For demonstration purposes only, a network server is used as the remote system.)
 
 ## Effect on API resilience
 
-This proposal introduces purely additive API with no impact on existing functionality or API resilience.
+This proposal introduces a purely additive API with no impact on existing functionality or API resilience.
 
 ## Future directions
 
 The jitter variants introduced by this proposal support custom `RandomNumberGenerator` by **copying** it in order to perform the necessary mutations. 
-This is not optimal and does not match the standard libraries signatures of e.g. `shuffle()` or `randomElement()` which take an **`inout`** random number generator.
-Due to the composability of backoff algorithms proposed, this is not possible to adopt in current Swift.
-If Swift at one point gains the capability to "store" `inout` variables the jitter variants should try to adopt this by introducing new `inout` overloads and deprecating the copying overloads.
+This is not optimal and does not match the standard library's signatures of e.g. `shuffle()` or `randomElement()` which take an **`inout`** random number generator.  
+Due to the composability of backoff algorithms proposed here, this is not possible to adopt in current Swift.  
+If Swift gains the capability to "store" `inout` variables, the jitter variants should adopt this by adding new `inout` overloads and deprecating the copying overloads.
 
 ## Alternatives considered
 
