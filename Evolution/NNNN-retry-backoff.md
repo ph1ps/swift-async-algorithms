@@ -192,7 +192,7 @@ This proposal introduces a purely additive API with no impact on existing functi
 ## Future directions
 
 The jitter variants introduced by this proposal support custom `RandomNumberGenerator` by **copying** it in order to perform the necessary mutations. 
-This is not optimal and does not match the standard libraryâs signatures of e.g. `shuffle()` or `randomElement()` which take an **`inout`** random number generator.  
+This is not optimal and does not match the standard library's signatures of e.g. `shuffle()` or `randomElement()` which take an **`inout`** random number generator.  
 Due to the composability of backoff algorithms proposed here, this is not possible to adopt in current Swift.  
 If Swift gains the capability to "store" `inout` variables, the jitter variants should adopt this by adding new `inout` overloads and deprecating the copying overloads.
 
