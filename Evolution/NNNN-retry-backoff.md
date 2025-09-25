@@ -204,11 +204,9 @@ If Swift gains the capability to "store" `inout` variables, the jitter variants 
 
 ## Alternatives considered
 
-Another option considered was to pass the current attempt number into the `BackoffStrategy`.  
-Although this initially seems useful, it conflicts with the idea of strategies being stateful.  
-A strategy is supposed to track its own progression (e.g. by counting invocations or storing the last duration).  
-If the attempt number were provided externally, strategies would become "semi-stateful": mutating because of internal components such as a `RandomNumberGenerator`, but at the same time relying on an external counter instead of their own stored history.  
-This dual model is harder to reason about and less consistent, so it was deliberately avoided.  
+Another option considered was to pass the current attempt number into the `BackoffStrategy`.
+
+Although this initially seems useful, it conflicts with the idea of strategies being stateful. A strategy is supposed to track its own progression (e.g. by counting invocations or storing the last duration). If the attempt number were provided externally, strategies would become "semi-stateful": mutating because of internal components such as a `RandomNumberGenerator`, but at the same time relying on an external counter instead of their own stored history. This dual model is harder to reason about and less consistent, so it was deliberately avoided.  
 
 If adopters require access to the attempt number, they are free to implement this themselves, since the strategy is invoked each time a failure occurs, making it straightforward to maintain an external attempt counter.
 
