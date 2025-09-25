@@ -132,14 +132,14 @@ Each call to `nextDuration()` returns the delay for the next retry attempt. Stra
 
 As previously mentioned this proposal introduces several common backoff strategies which include: 
 
-- **Constant**: `f(n) = constant`
-- **Linear**: `f(n) = initial + increment * n`
-- **Exponential**: `f(n) = initial * factor ^ n`
-- **Decorrelated Jitter**: `f(n) = random(base, f(n - 1) * factor)` where `f(0) = base`
-- **Minimum**: `f(n) = max(minimum, g(n))` where `g(n)` is the base strategy
-- **Maximum**: `f(n) = min(maximum, g(n))` where `g(n)` is the base strategy
-- **Full Jitter**: `f(n) = random(0, g(n))` where `g(n)` is the base strategy
-- **Equal Jitter**: `f(n) = random(g(n) / 2, g(n))` where `g(n)` is the base strategy
+- **Constant**: $f(n) = constant$
+- **Linear**: $f(n) = initial + increment * n$
+- **Exponential**: $f(n) = initial * factor ^ n$
+- **Decorrelated Jitter**: $f(n) = random(base, f(n - 1) * factor)$ where $f(0) = base$
+- **Minimum**: $f(n) = max(minimum, g(n))$ where $g(n)$ is the base strategy
+- **Maximum**: $f(n) = min(maximum, g(n))$ where $g(n)$ is the base strategy
+- **Full Jitter**: $f(n) = random(0, g(n))$ where $g(n)$ is the base strategy
+- **Equal Jitter**: $f(n) = random(g(n) / 2, g(n))$ where $g(n)$ is the base strategy
 
 ### Case studies
 
@@ -172,7 +172,7 @@ let response = try await retry(maxAttempts: 5) {
     let retryAfter = response.value(forHTTPHeaderField: "Retry-After"),
     let seconds = Double(retryAfter)
   {
-   throw TooManyRequestsError(retryAfter: seconds)
+    throw TooManyRequestsError(retryAfter: seconds)
   }
   return (data, response)
 } strategy: { error in
