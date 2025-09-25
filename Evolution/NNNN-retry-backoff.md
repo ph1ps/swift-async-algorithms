@@ -141,6 +141,12 @@ As previously mentioned this proposal introduces several common backoff strategi
 - **Full Jitter**: $f(n) = random(0, g(n))$ where $g(n)$ is the base strategy
 - **Equal Jitter**: $f(n) = random(g(n) / 2, g(n))$ where $g(n)$ is the base strategy
 
+##### Sendability
+
+The proposed backoff strategies are not marked `Sendable`.  
+They are not meant to be shared across isolation domains, because their state evolves with each call to `nextDuration()`.  
+Re-creating the strategies when they are used in different domains is usually the correct approach.
+
 ### Case studies
 
 The most common use cases encountered for recovering from transient failures are either:
